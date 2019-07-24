@@ -6,10 +6,17 @@ class ArticleAgregator
 
     public function __construct($port, $username, $password, $database)
     {
-        // En partant de l'idée que la database alltricks_test existe déjà ! :)
-        $dsn = "mysql:host={$port};dbname={$database}";
+        $dsn = "mysql:host={$port}";
         try {
             $this->pdo = new PDO($dsn, $username, $password);
+            
+            $query = "CREATE DATABASE IF NOT EXISTS :db";
+            $stmt = $this->pdo->prepare($query);
+            $stmt->bindParam(':db', $database);
+            $stmt->execute();
+
+            $swtichStmt = $this->pdo->prepare("USE {$database}");
+            $swtichStmt->execute();
         } catch(PDOException $e) {
             echo 'Connexion échoué : ' . $e->getMessage();
             exit();
@@ -92,6 +99,8 @@ class ArticleAgregator
 }
 
 /**
+ * J'instancie la connexion a la db dans le constructeur pour construire mes tables et les peupler (utile seulement pour le test !)
+ * J'en profite pour y faire ma connexion a la db
  * host, username, password, database name 
  * password = local personnal password
  */
