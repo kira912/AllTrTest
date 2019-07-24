@@ -4,7 +4,20 @@ class ArticleAgregator
 {
     protected $articles = [];
 
-    protected function createTables($pdo)
+    public function __construct($port, $username, $password, $database)
+    {
+        // En partant de l'idée que la database alltricks_test existe déjà ! :)
+        $dsn = "mysql:host={$port};dbname={$database}";
+        try {
+            $this->pdo = new PDO($dsn, $username, $password);
+        } catch(PDOException $e) {
+            echo 'Connexion échoué : ' . $e->getMessage();
+            exit();
+        }
+
+        $this->createTables();
+    }
+    protected function createTables()
     {
         $query = "CREATE TABLE IF NOT EXISTS source (
             id int NOT NULL auto_increment,
@@ -26,24 +39,12 @@ class ArticleAgregator
             INSERT INTO article VALUES (4, 1, 'Article 4', 'Lorem ipsum dolor sit amet 4');"
         ;
 
-        $stmt = $pdo->prepare($query);
+        $stmt = $this->pdo->prepare($query);
         $stmt->execute();
     }
 
-    public function appendDatabase($port, $username, $password, $database)
+    public function appendDatabase()
     {
-        // En partant de l'idée que la database alltricks_test existe déjà ! :)
-        $dsn = "mysql:host={$port};dbname={$database}";
-        try {
-            $pdo = new PDO($dsn, $username, $password);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch(PDOException $e) {
-            echo 'Connexion échoué : ' . $e->getMessage();
-            exit();
-        }
-
-        $this->createTables($pdo);
-
         $querySelectProducts = "SELECT 
             article.name, 
             source.name AS sourceName, 
@@ -53,7 +54,7 @@ class ArticleAgregator
             ON source.id = article.source_id"
         ;
 
-        $stmt = $pdo->prepare($querySelectProducts);
+        $stmt = $this->pdo->prepare($querySelectProducts);
         $stmt->execute();
 
         while($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
@@ -90,15 +91,16 @@ class ArticleAgregator
     }
 }
 
-$a = new ArticleAgregator();
+/**
+ * host, username, password, database name 
+ * password = local personnal password
+ */
+$a = new ArticleAgregator('localhost', 'root', '', 'alltricks_test');
 
 /**
  * Récupère les articles de la base de données, avec leur source.
- * host, username, password, database name
- * 
- * password = local personnal password
  */
-$a->appendDatabase('localhost', 'root', '', 'alltricks_test');
+$a->appendDatabase();
 
 /**
  * Récupère les articles d'un flux rss donné
